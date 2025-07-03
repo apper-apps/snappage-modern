@@ -1,0 +1,42 @@
+[
+  {
+    "id": "1",
+    "url": "https://github.com/microsoft/vscode",
+    "domain": "github.com",
+    "filename": "github.com.pdf",
+    "captureDate": "2024-01-15T10:30:00Z",
+    "fileSize": 1250000
+  },
+  {
+    "id": "2",
+    "url": "https://tailwindcss.com/docs",
+    "domain": "tailwindcss.com",
+    "filename": "tailwindcss.com.pdf",
+    "captureDate": "2024-01-14T15:45:00Z",
+    "fileSize": 890000
+  },
+  {
+    "id": "3",
+    "url": "https://react.dev/learn",
+    "domain": "react.dev",
+    "filename": "react.dev.pdf",
+    "captureDate": "2024-01-13T09:15:00Z",
+    "fileSize": 2100000
+  },
+  {
+    "id": "4",
+    "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript",
+    "domain": "developer.mozilla.org",
+    "filename": "developer.mozilla.org.pdf",
+    "captureDate": "2024-01-12T14:20:00Z",
+    "fileSize": 1800000
+  },
+  {
+    "id": "5",
+    "url": "https://vitejs.dev/guide/",
+    "domain": "vitejs.dev",
+    "filename": "vitejs.dev.pdf",
+    "captureDate": "2024-01-11T11:00:00Z",
+    "fileSize": 750000
+  }
+]
