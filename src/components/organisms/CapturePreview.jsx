@@ -191,8 +191,7 @@ const CapturePreview = ({ isOpen, onClose, captureData, onDownload }) => {
                   {captureData.url}
                 </div>
               </div>
-              
-              {/* Iframe Container */}
+{/* PDF Preview Container */}
               <div 
                 className="relative bg-white overflow-hidden"
                 style={{ height: 'calc(100% - 40px)' }}
@@ -201,18 +200,28 @@ const CapturePreview = ({ isOpen, onClose, captureData, onDownload }) => {
                 onMouseUp={handleMouseUp}
                 onMouseLeave={handleMouseUp}
               >
-                <iframe
-                  src={captureData.url}
-                  className="border-0"
-                  title="Webpage Preview"
-                  style={{
-                    width: `${200 / zoom}%`,
-                    height: `${200 / zoom}%`,
-                    transform: `scale(${zoom * 0.5}) translate(${panPosition.x / zoom}px, ${panPosition.y / zoom}px)`,
-                    transformOrigin: 'top left',
-                    cursor: zoom > 1 ? (isDragging ? 'grabbing' : 'grab') : 'default'
-                  }}
-                />
+                {captureData.pdfBlob ? (
+                  <iframe
+                    src={URL.createObjectURL(captureData.pdfBlob)}
+                    className="border-0"
+                    title="PDF Preview"
+                    style={{
+                      width: `${100 / zoom}%`,
+                      height: `${100 / zoom}%`,
+                      transform: `scale(${zoom}) translate(${panPosition.x / zoom}px, ${panPosition.y / zoom}px)`,
+                      transformOrigin: 'top left',
+                      cursor: zoom > 1 ? (isDragging ? 'grabbing' : 'grab') : 'default'
+                    }}
+                  />
+                ) : (
+                  <div className="flex items-center justify-center h-full">
+                    <div className="text-center text-gray-500">
+                      <ApperIcon name="FileText" size={48} className="mx-auto mb-4 opacity-50" />
+                      <p>PDF preview not available</p>
+                      <p className="text-sm mt-2">Use download to view the PDF</p>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Drag hint */}

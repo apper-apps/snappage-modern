@@ -80,22 +80,23 @@ const CapturePage = () => {
 
 setCaptureState(prev => ({ ...prev, status: 'processing', progress: 85 }))
       
-      // Process PDF generation
+      // Process PDF generation with real capture
       const result = await captureService.captureWebpage(captureState.url)
       
       setCaptureState(prev => ({ ...prev, progress: 100, status: 'success' }))
       
-      // Store capture result for preview
+      // Store capture result for preview with PDF blob
       setCaptureResult({
         url: captureState.url,
         domain: captureState.domain,
         pdfData: result.pdfData,
-        fileSize: result.fileSize || 0
+        pdfBlob: result.pdfBlob,
+        fileSize: result.fileSize || 0,
+        filename: result.filename
       })
       
       // Show preview modal instead of auto-download
       setShowPreviewModal(true)
-
       toast.success(`Successfully captured ${captureState.domain}`)
       
       // Add to history
@@ -143,29 +144,34 @@ setCaptureState(prev => ({ ...prev, status: 'processing', progress: 85 }))
     setShowPreview(false)
   }
 const handleDownloadFromPreview = (captureData) => {
-    // Download PDF from preview modal
-    const blob = new Blob([captureData.pdfData], { type: 'application/pdf' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `${captureData.domain}.pdf`
-    document.body.appendChild(a)
-    a.click()
-    document.body.removeChild(a)
-    URL.revokeObjectURL(url)
+    try {
+      // Download PDF from preview modal using the generated blob
+      const blob = captureData.pdfBlob || new Blob([captureData.pdfData], { type: 'application/pdf' })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = captureData.filename || `${captureData.domain}.pdf`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(url)
 
-    // Add to history
-    const historyItem = {
-      id: Date.now().toString(),
-      url: captureData.url,
-      domain: captureData.domain,
-      filename: `${captureData.domain}.pdf`,
-      captureDate: new Date().toISOString(),
-      fileSize: captureData.fileSize
+      // Add to history
+      const historyItem = {
+        id: Date.now().toString(),
+        url: captureData.url,
+        domain: captureData.domain,
+        filename: captureData.filename || `${captureData.domain}.pdf`,
+        captureDate: new Date().toISOString(),
+        fileSize: captureData.fileSize
+      }
+      
+      setHistory(prev => [historyItem, ...prev])
+      toast.success(`Successfully downloaded ${captureData.filename || captureData.domain + '.pdf'}`)
+    } catch (error) {
+      console.error('Download failed:', error)
+      toast.error('Failed to download PDF')
     }
-    
-    setHistory(prev => [historyItem, ...prev])
-    toast.success(`Successfully downloaded ${captureData.domain}.pdf`)
   }
 
   const handleClosePreviewModal = () => {
