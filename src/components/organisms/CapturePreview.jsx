@@ -1,137 +1,234 @@
-import { motion } from "framer-motion";
-import React, { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import React, { useState, useRef } from "react";
 import ApperIcon from "@/components/ApperIcon";
-import Loading from "@/components/ui/Loading";
+import Button from "@/components/atoms/Button";
+import { toast } from "react-toastify";
 
-const CapturePreview = ({ url, status, progress }) => {
-  const [iframeLoaded, setIframeLoaded] = useState(false)
+const CapturePreview = ({ isOpen, onClose, captureData, onDownload }) => {
+  const [zoom, setZoom] = useState(1)
+  const [panPosition, setPanPosition] = useState({ x: 0, y: 0 })
+  const [isDragging, setIsDragging] = useState(false)
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 })
+  const containerRef = useRef(null)
 
-  const getStatusMessage = () => {
-    switch (status) {
-      case 'loading':
-        return 'Loading webpage...'
-      case 'capturing':
-        return 'Capturing full page...'
-      case 'processing':
-        return 'Generating PDF...'
-      case 'success':
-        return 'Capture complete!'
-      default:
-        return 'Preparing...'
+  const zoomLevels = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 2, 3]
+
+  const handleZoomIn = () => {
+    const currentIndex = zoomLevels.indexOf(zoom)
+    if (currentIndex < zoomLevels.length - 1) {
+      setZoom(zoomLevels[currentIndex + 1])
     }
   }
 
-  const getStatusIcon = () => {
-    switch (status) {
-      case 'loading':
-        return 'Globe'
-      case 'capturing':
-        return 'Camera'
-      case 'processing':
-        return 'FileText'
-      case 'success':
-        return 'CheckCircle'
-      default:
-        return 'Clock'
+  const handleZoomOut = () => {
+    const currentIndex = zoomLevels.indexOf(zoom)
+    if (currentIndex > 0) {
+      setZoom(zoomLevels[currentIndex - 1])
     }
   }
+
+  const handleFitToWindow = () => {
+    setZoom(0.75)
+    setPanPosition({ x: 0, y: 0 })
+  }
+
+  const handleActualSize = () => {
+    setZoom(1)
+    setPanPosition({ x: 0, y: 0 })
+  }
+
+  const handleMouseDown = (e) => {
+    if (zoom > 1) {
+      setIsDragging(true)
+      setDragStart({
+        x: e.clientX - panPosition.x,
+        y: e.clientY - panPosition.y
+      })
+    }
+  }
+
+  const handleMouseMove = (e) => {
+    if (isDragging && zoom > 1) {
+      setPanPosition({
+        x: e.clientX - dragStart.x,
+        y: e.clientY - dragStart.y
+      })
+    }
+  }
+
+  const handleMouseUp = () => {
+    setIsDragging(false)
+  }
+
+  const handleDownload = () => {
+    if (captureData && onDownload) {
+      onDownload(captureData)
+      toast.success('PDF downloaded successfully')
+    }
+  }
+
+  const handleClose = () => {
+    setZoom(1)
+    setPanPosition({ x: 0, y: 0 })
+    onClose()
+  }
+
+  if (!captureData) return null
 
   return (
-    <motion.div
-      className="glass rounded-2xl p-6 border border-white/10 shadow-2xl"
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.6 }}
-    >
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center space-x-3">
-          <div className="relative">
-            <motion.div
-              className="w-8 h-8 bg-gradient-to-r from-primary to-secondary rounded-lg flex items-center justify-center"
-              animate={{ 
-                scale: status === 'capturing' ? [1, 1.1, 1] : 1,
-                rotate: status === 'processing' ? [0, 360] : 0
-}}
-              transition={{ 
-                duration: status === 'capturing' ? 1 : status === 'processing' ? 2 : 0.5,
-                repeat: status === 'capturing' || status === 'processing' ? Infinity : 0,
-                ease: "easeInOut"
-              }}
-            >
-              <ApperIcon name={getStatusIcon()} size={16} className="text-white" />
-            </motion.div>
-          </div>
-          <div>
-            <h3 className="text-lg font-display font-semibold text-white">
-              {getStatusMessage()}
-            </h3>
-            <p className="text-sm text-gray-400 font-body">
-              {progress}% complete
-            </p>
-          </div>
-        </div>
-
-        <div className="text-right">
-          <div className="text-2xl font-display font-bold gradient-text">
-            {progress}%
-          </div>
-        </div>
-      </div>
-
-      {/* Progress Bar */}
-      <div className="mb-6">
-        <div className="w-full bg-gray-700 rounded-full h-2 overflow-hidden">
+    <AnimatePresence>
+      {isOpen && (
+        <motion.div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          onClick={handleClose}
+        >
           <motion.div
-            className="h-full bg-gradient-to-r from-primary to-secondary"
-            initial={{ width: 0 }}
-            animate={{ width: `${progress}%` }}
-            transition={{ duration: 0.5, ease: "easeOut" }}
-          />
-        </div>
-      </div>
-
-      {/* Preview Frame */}
-      <div className="relative">
-        <div className="bg-gray-800 rounded-lg p-4 border border-gray-700">
-          <div className="flex items-center space-x-2 mb-3">
-            <div className="flex space-x-1">
-              <div className="w-2 h-2 bg-red-500 rounded-full"></div>
-              <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
-              <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-            </div>
-            <div className="flex-1 bg-gray-700 rounded px-3 py-1 text-xs text-gray-300 font-mono">
-              {url}
-            </div>
-          </div>
-          
-          <div className="relative bg-white rounded overflow-hidden" style={{ height: '300px' }}>
-            {!iframeLoaded && (
-              <div className="absolute inset-0 z-10">
-                <Loading />
+            className="glass rounded-2xl p-6 border border-white/10 shadow-2xl max-w-6xl max-h-[90vh] w-full mx-4 flex flex-col"
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.9 }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center space-x-3">
+                <div className="w-8 h-8 bg-gradient-to-r from-primary to-secondary rounded-lg flex items-center justify-center">
+                  <ApperIcon name="Eye" size={16} className="text-white" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-display font-semibold text-white">
+                    Preview Capture
+                  </h3>
+                  <p className="text-sm text-gray-400 font-body font-mono">
+                    {captureData.domain}
+                  </p>
+                </div>
               </div>
-            )}
-            
-            <iframe
-              src={url}
-              className="w-full h-full border-0"
-              title="Webpage Preview"
-              onLoad={() => setIframeLoaded(true)}
-              style={{ transform: 'scale(0.5)', transformOrigin: 'top left', width: '200%', height: '200%' }}
-            />
-            
-            {/* Capture overlay effect */}
-            {status === 'capturing' && (
-              <motion.div
-                className="absolute inset-0 bg-gradient-to-b from-transparent via-primary/20 to-transparent pointer-events-none"
-                initial={{ y: '-100%' }}
-                animate={{ y: '100%' }}
-                transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-              />
-            )}
-          </div>
-        </div>
-      </div>
-    </motion.div>
+
+              <div className="flex items-center space-x-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleDownload}
+                  className="text-white hover:bg-white/10"
+                >
+                  <ApperIcon name="Download" size={16} />
+                  Download PDF
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleClose}
+                  className="text-white hover:bg-white/10"
+                >
+                  <ApperIcon name="X" size={16} />
+                </Button>
+              </div>
+            </div>
+
+            {/* Zoom Controls */}
+            <div className="flex items-center justify-center space-x-2 mb-4">
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={handleZoomOut}
+                disabled={zoom <= zoomLevels[0]}
+                className="text-white"
+              >
+                <ApperIcon name="ZoomOut" size={16} />
+              </Button>
+              
+              <div className="flex items-center space-x-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleFitToWindow}
+                  className="text-white hover:bg-white/10"
+                >
+                  Fit
+                </Button>
+                <span className="text-sm text-gray-300 font-mono min-w-[4rem] text-center">
+                  {Math.round(zoom * 100)}%
+                </span>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleActualSize}
+                  className="text-white hover:bg-white/10"
+                >
+                  100%
+                </Button>
+              </div>
+
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={handleZoomIn}
+                disabled={zoom >= zoomLevels[zoomLevels.length - 1]}
+                className="text-white"
+              >
+                <ApperIcon name="ZoomIn" size={16} />
+              </Button>
+            </div>
+
+            {/* Preview Container */}
+            <div 
+              ref={containerRef}
+              className="flex-1 relative bg-gray-800 rounded-lg border border-gray-700 overflow-hidden"
+              style={{ minHeight: '500px' }}
+            >
+              {/* Browser Chrome */}
+              <div className="flex items-center space-x-2 bg-gray-900 px-4 py-2 border-b border-gray-700">
+                <div className="flex space-x-1">
+                  <div className="w-2 h-2 bg-red-500 rounded-full"></div>
+                  <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
+                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                </div>
+                <div className="flex-1 bg-gray-700 rounded px-3 py-1 text-xs text-gray-300 font-mono">
+                  {captureData.url}
+                </div>
+              </div>
+              
+              {/* Iframe Container */}
+              <div 
+                className="relative bg-white overflow-hidden"
+                style={{ height: 'calc(100% - 40px)' }}
+                onMouseDown={handleMouseDown}
+                onMouseMove={handleMouseMove}
+                onMouseUp={handleMouseUp}
+                onMouseLeave={handleMouseUp}
+              >
+                <iframe
+                  src={captureData.url}
+                  className="border-0"
+                  title="Webpage Preview"
+                  style={{
+                    width: `${200 / zoom}%`,
+                    height: `${200 / zoom}%`,
+                    transform: `scale(${zoom * 0.5}) translate(${panPosition.x / zoom}px, ${panPosition.y / zoom}px)`,
+                    transformOrigin: 'top left',
+                    cursor: zoom > 1 ? (isDragging ? 'grabbing' : 'grab') : 'default'
+                  }}
+                />
+              </div>
+
+              {/* Drag hint */}
+              {zoom > 1 && (
+                <div className="absolute top-16 right-4 bg-black/60 backdrop-blur-sm rounded-lg px-3 py-2">
+                  <p className="text-xs text-gray-300 flex items-center">
+                    <ApperIcon name="Move" size={12} className="mr-1" />
+                    Drag to pan
+                  </p>
+                </div>
+              )}
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   )
 }
 

@@ -1,13 +1,13 @@
-import { useState, useEffect } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
-import { toast } from 'react-toastify'
-import Header from '@/components/organisms/Header'
-import CaptureForm from '@/components/organisms/CaptureForm'
-import CapturePreview from '@/components/organisms/CapturePreview'
-import StatusDisplay from '@/components/organisms/StatusDisplay'
-import CaptureHistory from '@/components/organisms/CaptureHistory'
-import { captureService } from '@/services/api/captureService'
-import { formatDomain } from '@/utils/urlUtils'
+import React, { useEffect, useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
+import { toast } from "react-toastify";
+import { formatDomain } from "@/utils/urlUtils";
+import CaptureHistory from "@/components/organisms/CaptureHistory";
+import CaptureForm from "@/components/organisms/CaptureForm";
+import CapturePreview from "@/components/organisms/CapturePreview";
+import Header from "@/components/organisms/Header";
+import StatusDisplay from "@/components/organisms/StatusDisplay";
+import { captureService } from "@/services/api/captureService";
 
 const CapturePage = () => {
   const [captureState, setCaptureState] = useState({
@@ -20,7 +20,8 @@ const CapturePage = () => {
   })
   const [history, setHistory] = useState([])
   const [showPreview, setShowPreview] = useState(false)
-
+  const [showPreviewModal, setShowPreviewModal] = useState(false)
+  const [captureResult, setCaptureResult] = useState(null)
   useEffect(() => {
     loadHistory()
   }, [])
@@ -77,23 +78,23 @@ const CapturePage = () => {
         setCaptureState(prev => ({ ...prev, progress: i }))
       }
 
-      setCaptureState(prev => ({ ...prev, status: 'processing', progress: 85 }))
+setCaptureState(prev => ({ ...prev, status: 'processing', progress: 85 }))
       
       // Process PDF generation
       const result = await captureService.captureWebpage(captureState.url)
       
       setCaptureState(prev => ({ ...prev, progress: 100, status: 'success' }))
       
-      // Download PDF
-      const blob = new Blob([result.pdfData], { type: 'application/pdf' })
-      const url = URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = `${captureState.domain}.pdf`
-      document.body.appendChild(a)
-      a.click()
-      document.body.removeChild(a)
-      URL.revokeObjectURL(url)
+      // Store capture result for preview
+      setCaptureResult({
+        url: captureState.url,
+        domain: captureState.domain,
+        pdfData: result.pdfData,
+        fileSize: result.fileSize || 0
+      })
+      
+      // Show preview modal instead of auto-download
+      setShowPreviewModal(true)
 
       toast.success(`Successfully captured ${captureState.domain}`)
       
@@ -109,7 +110,7 @@ const CapturePage = () => {
       
       setHistory(prev => [historyItem, ...prev])
       
-      // Reset after success
+// Reset after preview modal opens
       setTimeout(() => {
         setCaptureState(prev => ({ 
           ...prev, 
@@ -120,8 +121,7 @@ const CapturePage = () => {
           previewUrl: null
         }))
         setShowPreview(false)
-      }, 2000)
-
+      }, 1000)
     } catch (error) {
       console.error('Capture failed:', error)
       setCaptureState(prev => ({ 
@@ -141,6 +141,36 @@ const CapturePage = () => {
       error: null 
     }))
     setShowPreview(false)
+  }
+const handleDownloadFromPreview = (captureData) => {
+    // Download PDF from preview modal
+    const blob = new Blob([captureData.pdfData], { type: 'application/pdf' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `${captureData.domain}.pdf`
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+
+    // Add to history
+    const historyItem = {
+      id: Date.now().toString(),
+      url: captureData.url,
+      domain: captureData.domain,
+      filename: `${captureData.domain}.pdf`,
+      captureDate: new Date().toISOString(),
+      fileSize: captureData.fileSize
+    }
+    
+    setHistory(prev => [historyItem, ...prev])
+    toast.success(`Successfully downloaded ${captureData.domain}.pdf`)
+  }
+
+  const handleClosePreviewModal = () => {
+    setShowPreviewModal(false)
+    setCaptureResult(null)
   }
 
   const handleClearHistory = () => {
@@ -183,14 +213,7 @@ const CapturePage = () => {
                   onRetry={handleRetry}
                 />
 
-                {showPreview && captureState.previewUrl && (
-                  <CapturePreview
-                    url={captureState.previewUrl}
-                    status={captureState.status}
-                    progress={captureState.progress}
-                  />
-                )}
-              </motion.div>
+</motion.div>
             )}
           </AnimatePresence>
 
@@ -199,8 +222,7 @@ const CapturePage = () => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.2 }}
-            >
-              <CaptureHistory
+<CaptureHistory
                 history={history}
                 onClearHistory={handleClearHistory}
               />
@@ -208,8 +230,16 @@ const CapturePage = () => {
           )}
         </motion.div>
       </main>
+
+      {/* Preview Modal */}
+      {/* Preview Modal */}
+      <CapturePreview
+        isOpen={showPreviewModal}
+        onClose={handleClosePreviewModal}
+        captureData={captureResult}
+        onDownload={handleDownloadFromPreview}
+      />
     </div>
-  )
 }
 
 export default CapturePage
