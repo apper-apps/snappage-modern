@@ -28,15 +28,16 @@ function createCaptureFrame(url) {
       return;
     }
 
-    const iframe = document.createElement('iframe');
+const iframe = document.createElement('iframe');
     iframe.style.position = 'absolute';
     iframe.style.left = '-9999px';
     iframe.style.top = '-9999px';
-    iframe.style.width = '1200px';
-    iframe.style.height = '800px';
+    iframe.style.width = '1440px';  // Increased for better layout capture
+    iframe.style.height = '900px';  // Increased for better content visibility
     iframe.style.border = 'none';
     iframe.style.visibility = 'hidden';
-    
+    iframe.style.overflow = 'hidden';  // Prevent scrollbars during capture
+    iframe.style.transform = 'scale(1)';  // Ensure proper scaling
     iframe.onload = () => {
       try {
         // For same-origin, we can access the iframe content
