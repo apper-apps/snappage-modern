@@ -217,12 +217,13 @@ const handleDownloadFromPreview = (captureData) => {
             )}
           </AnimatePresence>
 
-          {history.length > 0 && (
+{history.length > 0 && (
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.2 }}
-<CaptureHistory
+            >
+              <CaptureHistory
                 history={history}
                 onClearHistory={handleClearHistory}
               />
@@ -236,10 +237,11 @@ const handleDownloadFromPreview = (captureData) => {
       <CapturePreview
         isOpen={showPreviewModal}
         onClose={handleClosePreviewModal}
-        captureData={captureResult}
+captureData={captureResult}
         onDownload={handleDownloadFromPreview}
       />
     </div>
+  )
 }
 
 export default CapturePage
